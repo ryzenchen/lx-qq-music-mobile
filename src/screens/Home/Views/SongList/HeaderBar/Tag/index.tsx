@@ -16,7 +16,7 @@ export default forwardRef<TagType, TagProps>(({ onTagChange }, ref) => {
   // console.log('render tag btn')
   const currentTagBtnRef = useRef<CurrentTagBtnType>(null)
   // const tagPopupRef = useRef<TagPopupType>(null)
-  const tagInfoRef = useRef<{ source: Source; activeId: string }>({ source: 'kw', activeId: '' })
+  const tagInfoRef = useRef<{ source: Source; activeId: string }>({ source: 'tx', activeId: '' })
 
   useEffect(() => {
     const handleChange = (name: string, id: string) => {

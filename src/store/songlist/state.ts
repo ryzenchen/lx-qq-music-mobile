@@ -95,7 +95,7 @@ const state: InitState = {
     limit: 30,
     maxPage: 1,
     key: null,
-    source: 'kw',
+    source: 'tx',
     tagId: '',
     sortId: '',
   },
@@ -108,7 +108,7 @@ const state: InitState = {
     limit: 30,
     maxPage: 1,
     key: null,
-    source: 'kw',
+    source: 'tx',
     info: {},
   },
 }

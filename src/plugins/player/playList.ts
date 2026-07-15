@@ -253,7 +253,7 @@ const updateMetaInfo = async (mInfo: LX.Player.MusicInfo, lyric?: string) => {
   )
 
   // Update home screen widget
-  const widgetTitle = mInfo.name ?? 'LX-N Music'
+  const widgetTitle = mInfo.name ?? 'LX-Q'
   const widgetArtist = mInfo.singer ? `${mInfo.singer}${mInfo.album ? ` · ${mInfo.album}` : ''}` : '未在播放'
   void updateWidget(widgetTitle, widgetArtist, state.isPlaying, widgetArtwork).catch(() => { })
 }

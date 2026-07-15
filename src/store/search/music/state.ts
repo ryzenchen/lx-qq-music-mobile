@@ -25,7 +25,7 @@ export interface InitState {
 
 const state: InitState = {
   searchText: '',
-  source: 'wy',
+  source: 'tx',
   sources: [],
   listInfos: {
     all: {

@@ -21,7 +21,7 @@ interface SonglistListProps {
 }
 export default forwardRef<MusicListType, SonglistListProps>(({ onOpenDetail }, ref) => {
   const listRef = useRef<SonglistType>(null)
-  const searchInfoRef = useRef<{ text: string; source: Source }>({ text: '', source: 'kw' })
+  const searchInfoRef = useRef<{ text: string; source: Source }>({ text: '', source: 'tx' })
   const isUnmountedRef = useRef(false)
   useImperativeHandle(
     ref,

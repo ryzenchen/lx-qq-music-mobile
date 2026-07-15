@@ -25,7 +25,7 @@ export interface OpenListType {
 export default forwardRef<OpenListType, OpenListProps>(({ onOpenDetail }, ref) => {
   const t = useI18n()
   const modalRef = useRef<ModalType>(null)
-  const songlistInfoRef = useRef<{ source: Source }>({ source: 'kw' })
+  const songlistInfoRef = useRef<{ source: Source }>({ source: 'tx' })
 
   useImperativeHandle(ref, () => ({
     setInfo(source) {

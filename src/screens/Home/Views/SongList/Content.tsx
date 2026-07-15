@@ -26,7 +26,7 @@ export default () => {
   const [scrollToMusicInfo, setScrollToMusicInfo] = useState<MusicInfoOnline | null>(null)
   const selectedListRef = useRef(selectedList)
   selectedListRef.current = selectedList
-  const songlistInfo = useRef<SonglistInfo>({ source: 'kw', sortId: '5', tagId: '' })
+  const songlistInfo = useRef<SonglistInfo>({ source: 'tx', sortId: '5', tagId: '' })
   const [headerKey, setHeaderKey] = useState(Date.now())
   const subscribedPlaylists = useWySubscribedPlaylists()
 

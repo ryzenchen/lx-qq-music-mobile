@@ -23,7 +23,7 @@ export interface InitState {
 
 const state: InitState = {
   searchText: '',
-  source: 'kw',
+  source: 'tx',
   sources: [],
   listInfos: {
     all: {

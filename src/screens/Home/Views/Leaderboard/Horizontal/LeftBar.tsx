@@ -30,7 +30,7 @@ export default forwardRef<LeftBarType, LeftBarProps>(({ onChangeList }, ref) => 
   const sourceSelectorRef = useRef<SourceSelectorType>(null)
   const boardsListRef = useRef<BoardsListType>(null)
   const boundInfo = useRef<{ source: LX.OnlineSource; id: string | null }>({
-    source: 'kw',
+    source: 'tx',
     id: null,
   })
   useImperativeHandle(

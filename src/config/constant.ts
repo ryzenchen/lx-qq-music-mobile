@@ -146,20 +146,20 @@ export const MUSIC_TOGGLE_MODE_LIST = [
 
 export const DEFAULT_SETTING = {
   leaderboard: {
-    source: 'kw' as LX.OnlineSource,
-    boardId: 'kw__16',
+    source: 'tx' as LX.OnlineSource,
+    boardId: 'tx__4',
   },
 
   songList: {
-    source: 'kw' as LX.OnlineSource,
-    sortId: 'new',
+    source: 'tx' as LX.OnlineSource,
+    sortId: '5',
     tagName: '',
     tagId: '',
   },
 
   search: {
-    temp_source: 'wy' as LX.OnlineSource,
-    source: 'wy' as LX.OnlineSource | 'wy',
+    temp_source: 'tx' as LX.OnlineSource,
+    source: 'tx' as LX.OnlineSource,
     type: 'music' as 'music' | 'songlist' | 'singer' | 'album',
   },
 

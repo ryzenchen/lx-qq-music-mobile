@@ -30,7 +30,7 @@ export default () => {
   const boardsListRef = useRef<BoardsListType>(null)
   const headerBarRef = useRef<HeaderBarType>(null)
   const boundInfo = useRef<{ source: LX.OnlineSource; id: string | null }>({
-    source: 'kw',
+    source: 'tx',
     id: null,
   })
   // const [width, setWidth] = useState(0)

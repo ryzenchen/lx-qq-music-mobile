@@ -73,7 +73,7 @@ public class LyricView extends Activity implements View.OnTouchListener {
 
   private int maxLineNum = 5;
   // private float lineHeight = 1;
-  private String currentLyric = "LX-N Music ^-^";
+  private String currentLyric = "LX-Q ^-^";
   private ArrayList<String> currentExtendedLyrics = new ArrayList<>();
 
   private int mLastRotation;

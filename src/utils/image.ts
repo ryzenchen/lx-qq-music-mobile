@@ -14,7 +14,7 @@ export const saveImageToPictures = async (url: string, name: string = 'image') =
 
   const extension = getFileExtensionFromUrl(url)
   const picBaseDir = RNFetchBlob.fs.dirs.PictureDir || RNFetchBlob.fs.dirs.DownloadDir
-  const saveDir = `${picBaseDir}/LX-N-Music`
+  const saveDir = `${picBaseDir}/LX-Q`
   const fileName = `${sanitizeFileName(name)}_${Date.now()}.${extension}`
   const filePath = `${saveDir}/${fileName}`
 
