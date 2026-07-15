@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react'
-import { Linking, StyleSheet, TouchableOpacity, View } from 'react-native'
-import WebView, { type WebViewNavigation } from 'react-native-webview'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
+import WebView from 'react-native-webview'
 
 import Modal, { type ModalType } from '@/components/common/Modal'
 import { Icon } from '@/components/common/Icon'
@@ -10,10 +10,35 @@ import { useTheme } from '@/store/theme/hook'
 import { getQQAuthStatus } from '@/core/qqAuth'
 import { toast } from '@/utils/tools'
 
-// QQ 音乐网页使用的腾讯官方 OAuth 应用。移动展示模式可唤起本机 QQ，
-// 同时保留腾讯页面提供的账号登录方式，不需要另一台手机扫码。
-const LOGIN_URL = 'https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id=100497308&redirect_uri=https%3A%2F%2Fy.qq.com%2Fportal%2Fwx_redirect.html%3Flogin_type%3D1%26surl%3Dhttps%253A%252F%252Fy.qq.com%252Fn%252Fryqq_v2%252Fprofile&state=state&display=mobile&scope=get_user_info%2Cget_app_friends'
+// QQ 音乐网页使用的腾讯官方 OAuth 应用。使用网页账号登录可让授权回调与
+// QQ 音乐 Cookie 全程留在同一个 WebView 内，避免跳到外部浏览器后状态丢失。
+const LOGIN_URL = 'https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id=100497308&redirect_uri=https%3A%2F%2Fy.qq.com%2Fportal%2Fwx_redirect.html%3Flogin_type%3D1%26surl%3Dhttps%253A%252F%252Fy.qq.com%252Fn%252Fryqq_v2%252Fprofile&state=state&display=pc&scope=get_user_info%2Cget_app_friends'
 const MOBILE_USER_AGENT = 'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36'
+const OPEN_PASSWORD_LOGIN_SCRIPT = `
+  (function openPasswordLogin() {
+    var attempts = 0;
+    var timer = setInterval(function() {
+      attempts += 1;
+      var button = document.querySelector('#switcher_plogin, .switcher_plogin');
+      if (!button) {
+        var links = document.querySelectorAll('a');
+        for (var i = 0; i < links.length; i++) {
+          if ((links[i].textContent || '').trim() === '密码登录') {
+            button = links[i];
+            break;
+          }
+        }
+      }
+      if (button) {
+        clearInterval(timer);
+        button.click();
+      } else if (attempts >= 20) {
+        clearInterval(timer);
+      }
+    }, 300);
+    true;
+  })();
+`
 
 export interface QQLoginModalType {
   show: () => void
@@ -71,22 +96,13 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
     }
   }, [handleClose])
 
-  const handleNavigation = useCallback((request: WebViewNavigation) => {
-    const url = request.url
-    if (/^https?:\/\//i.test(url) || url === 'about:blank') return true
-
-    // 腾讯登录页的一键登录会使用 QQ 的应用协议。只交给 Android 系统处理，
-    // 不读取、转发或记录协议中的任何登录参数。
-    if (/^(mqqapi|mqqopensdkapi|wtloginmqq):\/\//i.test(url)) {
-      void Linking.openURL(url).catch(() => toast('未能打开 QQ，请确认已安装最新版 QQ'))
-    }
-    return false
-  }, [])
-
   return (
     <Modal ref={modalRef} statusBarPadding={false} bgHide={false}>
       <View style={[styles.container, { backgroundColor: theme['c-content-background'] }]}>
         <Header onClose={handleClose} />
+        <View style={styles.notice}>
+          <Text size={13}>请在下方直接输入 QQ 账号和密码；内容只提交给腾讯官方页面。</Text>
+        </View>
         <WebView
           source={{ uri: LOGIN_URL }}
           sharedCookiesEnabled
@@ -96,7 +112,9 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
           nestedScrollEnabled
           androidLayerType="hardware"
           setSupportMultipleWindows={false}
-          onShouldStartLoadWithRequest={handleNavigation}
+          injectedJavaScript={OPEN_PASSWORD_LOGIN_SCRIPT}
+          injectedJavaScriptForMainFrameOnly={false}
+          onShouldStartLoadWithRequest={({ url }) => /^https?:\/\//i.test(url) || url === 'about:blank'}
           onLoadEnd={() => { void checkLoginStatus() }}
           onNavigationStateChange={() => { void checkLoginStatus() }}
           userAgent={MOBILE_USER_AGENT}
@@ -117,4 +135,5 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   headerButton: { padding: 5, width: 40 },
+  notice: { paddingHorizontal: 12, paddingVertical: 8 },
 })
