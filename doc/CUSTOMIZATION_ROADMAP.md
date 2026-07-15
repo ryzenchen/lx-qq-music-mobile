@@ -99,3 +99,4 @@
 - Expanded the local login-state detector to accept QQ Music's alternate cookie names such as qqmusic_key, musickey, p_skey, musicid, and ptui_loginuin.
 - Aggressive fallback: after QR confirmation, LX-Q now runs the login_jump, QQ Music OAuth authorize URL, and QQ Music profile URL in an in-app WebView, and mirrors returned cookies across QQ Music related domains.
 - Fixed the aggressive OAuth WebView layout so the authorization handoff area renders at full modal width instead of collapsing to a 1px vertical line.
+- Fixed modal touch handling for non-background-close dialogs so the in-app QQ Music authorization WebView can receive taps and gestures.

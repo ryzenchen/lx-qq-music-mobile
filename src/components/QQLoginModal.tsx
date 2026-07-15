@@ -188,22 +188,33 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
     <Modal ref={modalRef} statusBarPadding={false} bgHide={false}>
       <View style={[styles.container, { backgroundColor: theme['c-content-background'] }]}>
         <Header onClose={handleClose} />
-        <View style={styles.content}>
+        <View style={[styles.content, callbackUrl ? styles.contentWithCallback : null]}>
           <Text size={14} style={styles.message}>{message}</Text>
-          <View style={[styles.qrBox, { borderColor: theme['c-border-background'] }]}>
-            {session
-              ? <Image source={{ uri: session.imageDataUri }} style={styles.qrImage} />
-              : loading
-                ? <ActivityIndicator size="large" color={theme['c-primary']} />
-                : <Text color={theme['c-font-label']}>请刷新二维码</Text>}
-          </View>
+          {callbackUrl ? null : (
+            <View style={[styles.qrBox, { borderColor: theme['c-border-background'] }]}>
+              {session
+                ? <Image source={{ uri: session.imageDataUri }} style={styles.qrImage} />
+                : loading
+                  ? <ActivityIndicator size="large" color={theme['c-primary']} />
+                  : <Text color={theme['c-font-label']}>请刷新二维码</Text>}
+            </View>
+          )}
           <View style={styles.buttons}>
-            <Button onPress={saveQRCode} style={styles.button}>
-              <Text>保存二维码</Text>
-            </Button>
-            <Button onPress={refreshQRCode} style={styles.button}>
-              <Text>刷新二维码</Text>
-            </Button>
+            {callbackUrl ? null : (
+              <>
+                <Button onPress={saveQRCode} style={styles.button}>
+                  <Text>保存二维码</Text>
+                </Button>
+                <Button onPress={refreshQRCode} style={styles.button}>
+                  <Text>刷新二维码</Text>
+                </Button>
+              </>
+            )}
+            {callbackUrl && callbackIndex < callbackUrls.length - 1 ? (
+              <Button onPress={() => setCallbackIndex(callbackIndex + 1)} style={styles.button}>
+                <Text>换下一个授权页</Text>
+              </Button>
+            ) : null}
             <Button onPress={() => { void finishCallbackLogin() }} style={styles.button}>
               <Text>我已确认登录</Text>
             </Button>
@@ -254,6 +265,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     gap: 16,
   },
+  contentWithCallback: {
+    justifyContent: 'flex-start',
+    paddingTop: 12,
+  },
   message: { textAlign: 'center' },
   qrBox: {
     width: 250,
@@ -276,7 +291,8 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     minWidth: 280,
     width: '100%',
-    height: 260,
+    flex: 1,
+    minHeight: 360,
     borderWidth: 1,
     borderRadius: 8,
     overflow: 'hidden',
