@@ -8,7 +8,7 @@ const QQ_PTLOGIN_COOKIE_URL = 'https://ssl.ptlogin2.qq.com/'
 const QQ_QR_SHOW_API = 'https://ssl.ptlogin2.qq.com/ptqrshow'
 const QQ_QR_CHECK_API = 'https://ssl.ptlogin2.qq.com/ptqrlogin'
 const QQ_LOGIN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-const QQ_MUSIC_AUTHORIZE_URL = 'https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id=100497308&redirect_uri=https%3A%2F%2Fy.qq.com%2Fportal%2Fwx_redirect.html%3Flogin_type%3D1%26surl%3Dhttps%253A%252F%252Fy.qq.com%252Fn%252Fryqq_v2%252Fprofile&state=state&display=pc&scope=get_user_info%2Cget_app_friends'
+export const QQ_MUSIC_AUTHORIZE_URL = 'https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id=100497308&redirect_uri=https%3A%2F%2Fy.qq.com%2Fportal%2Fwx_redirect.html%3Flogin_type%3D1%26surl%3Dhttps%253A%252F%252Fy.qq.com%252Fn%252Fryqq_v2%252Fprofile&state=state&display=pc&scope=get_user_info%2Cget_app_friends'
 
 // 仅允许 QQ 音乐账号 API 所需字段进入应用内存，避免采集无关 Cookie。
 const QQ_AUTH_COOKIE_NAMES = [

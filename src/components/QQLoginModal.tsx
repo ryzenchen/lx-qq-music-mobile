@@ -1,6 +1,5 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { ActivityIndicator, Image, StyleSheet, TouchableOpacity, View } from 'react-native'
-import RNFetchBlob from 'rn-fetch-blob'
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from 'react'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import WebView from 'react-native-webview'
 
 import Modal, { type ModalType } from '@/components/common/Modal'
@@ -9,12 +8,15 @@ import Text from '@/components/common/Text'
 import Button from '@/components/common/Button'
 import { useStatusbarHeight } from '@/store/common/hook'
 import { useTheme } from '@/store/theme/hook'
-import { createQQQRLogin, getQQAuthStatus, pollQQQRLogin, type QQQRLoginSession } from '@/core/qqAuth'
-import { requestStoragePermission, toast } from '@/utils/tools'
+import { getQQAuthStatus, QQ_MUSIC_AUTHORIZE_URL } from '@/core/qqAuth'
+import { toast } from '@/utils/tools'
 
 export interface QQLoginModalType {
   show: () => void
 }
+
+const QQ_MUSIC_PROFILE_URL = 'https://y.qq.com/n/ryqq_v2/profile'
+const QQ_LOGIN_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
 const Header = ({ onClose }: { onClose: () => void }) => {
   const theme = useTheme()
@@ -37,208 +39,91 @@ const Header = ({ onClose }: { onClose: () => void }) => {
 
 export default forwardRef<QQLoginModalType, {}>((props, ref) => {
   const modalRef = useRef<ModalType>(null)
-  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const pollingRef = useRef(false)
-  const sessionRef = useRef<QQQRLoginSession | null>(null)
   const theme = useTheme()
-  const [session, setSession] = useState<QQQRLoginSession | null>(null)
-  const [callbackUrls, setCallbackUrls] = useState<string[]>([])
-  const [callbackIndex, setCallbackIndex] = useState(0)
-  const [message, setMessage] = useState('正在生成登录二维码...')
-  const [loading, setLoading] = useState(false)
-  const callbackUrl = callbackUrls[callbackIndex] ?? null
-
-  const stopPolling = useCallback(() => {
-    if (pollTimerRef.current) clearInterval(pollTimerRef.current)
-    pollTimerRef.current = null
-    pollingRef.current = false
-  }, [])
+  const [pageKey, setPageKey] = useState(0)
+  const [sourceUrl, setSourceUrl] = useState(QQ_MUSIC_AUTHORIZE_URL)
+  const [message, setMessage] = useState('请在下方 QQ 音乐官方页面手动登录，完成后点“我已完成登录”。')
 
   const handleClose = useCallback(() => {
-    stopPolling()
     modalRef.current?.setVisible(false)
-  }, [stopPolling])
+  }, [])
 
-  const checkAuthAndClose = useCallback(async () => {
+  const checkAuthAndClose = useCallback(async (silent = false) => {
     try {
       const status = await getQQAuthStatus()
-      if (!status.loggedIn) return false
+      if (!status.loggedIn) {
+        if (!silent) setMessage('还没有检测到 QQ 音乐登录状态，请先在网页内完成登录/授权，再点“我已完成登录”。')
+        return false
+      }
       global.app_event.qqAuthUpdated(status)
       toast('QQ 音乐登录成功')
       handleClose()
       return true
     } catch {
+      if (!silent) setMessage('登录状态检测失败，请确认网络正常后再试。')
       return false
     }
   }, [handleClose])
 
-  const finishCallbackLogin = useCallback(async () => {
-    const loggedIn = await checkAuthAndClose()
-    if (!loggedIn) setMessage('QQ 已确认，正在接收 QQ 音乐登录状态...')
-  }, [checkAuthAndClose])
+  const reloadAuthorizePage = useCallback(() => {
+    setSourceUrl(QQ_MUSIC_AUTHORIZE_URL)
+    setPageKey(key => key + 1)
+    setMessage('已刷新登录页，请在下方官方页面手动登录。')
+  }, [])
 
-  const handleCallbackPageLoaded = useCallback(async () => {
-    const loggedIn = await checkAuthAndClose()
-    if (loggedIn) return
-    if (callbackIndex < callbackUrls.length - 1) {
-      setCallbackIndex(callbackIndex + 1)
-      return
-    }
-    setMessage('QQ 已确认，请在下方授权页等待跳转完成；如果出现登录/授权按钮，请直接点一下')
-  }, [callbackIndex, callbackUrls.length, checkAuthAndClose])
-
-  const poll = useCallback(async () => {
-    const currentSession = sessionRef.current
-    if (!currentSession || pollingRef.current) return
-    if (Date.now() > currentSession.expiresAt) {
-      stopPolling()
-      setMessage('二维码已过期，请刷新后再试')
-      return
-    }
-
-    pollingRef.current = true
-    try {
-      const result = await pollQQQRLogin(currentSession.qrsig)
-      if (result.status === 'success') {
-        stopPolling()
-        setMessage('QQ 已确认，正在接收 QQ 音乐登录状态...')
-        const urls = result.callbackUrls ?? (result.redirectUrl ? [result.redirectUrl] : [])
-        if (urls.length) {
-          setCallbackUrls(urls)
-          setCallbackIndex(0)
-        } else {
-          void finishCallbackLogin()
-        }
-      } else if (result.status === 'scanned') {
-        setMessage('已扫码，请在 QQ 中确认登录')
-      } else if (result.status === 'expired') {
-        stopPolling()
-        setMessage('二维码已过期，请刷新后再试')
-      } else if (result.status === 'failed') {
-        setMessage('登录检查失败，请刷新二维码后重试')
-      } else {
-        setMessage('等待使用 QQ 扫码确认')
-      }
-    } catch {
-      setMessage('网络检查失败，稍后会自动重试')
-    } finally {
-      pollingRef.current = false
-    }
-  }, [finishCallbackLogin, stopPolling])
-
-  const startPolling = useCallback(() => {
-    stopPolling()
-    pollTimerRef.current = setInterval(() => { void poll() }, 2500)
-    void poll()
-  }, [poll, stopPolling])
-
-  const refreshQRCode = useCallback(async () => {
-    setLoading(true)
-    setMessage('正在生成登录二维码...')
-    stopPolling()
-    setCallbackUrls([])
-    setCallbackIndex(0)
-    try {
-      const nextSession = await createQQQRLogin()
-      sessionRef.current = nextSession
-      setSession(nextSession)
-      setMessage('请用 QQ 扫码；只有一台手机时，先保存二维码到相册，再到 QQ 扫一扫里从相册选择')
-      startPolling()
-    } catch {
-      setSession(null)
-      sessionRef.current = null
-      setMessage('二维码生成失败，请检查网络后重试')
-    } finally {
-      setLoading(false)
-    }
-  }, [startPolling, stopPolling])
-
-  const saveQRCode = useCallback(async () => {
-    const currentSession = sessionRef.current
-    if (!currentSession) return
-    try {
-      const isGranted = await requestStoragePermission()
-      if (isGranted === false) {
-        toast('没有存储权限，无法保存二维码', 'short')
-        return
-      }
-
-      const baseDir = RNFetchBlob.fs.dirs.PictureDir || RNFetchBlob.fs.dirs.DownloadDir
-      const dir = `${baseDir}/LX-Q`
-      if (!(await RNFetchBlob.fs.exists(dir))) await RNFetchBlob.fs.mkdir(dir)
-      const path = `${dir}/qq-login-qrcode-${Date.now()}.png`
-      await RNFetchBlob.fs.writeFile(path, currentSession.imageBase64, 'base64')
-      await RNFetchBlob.fs.scanFile([{ path }])
-      toast(`二维码已保存到: ${path}`, 'long')
-    } catch {
-      toast('保存二维码失败，请刷新后重试', 'long')
-    }
+  const openProfilePage = useCallback(() => {
+    setSourceUrl(QQ_MUSIC_PROFILE_URL)
+    setPageKey(key => key + 1)
+    setMessage('已打开 QQ 音乐个人页；如果页面显示已登录，再点“我已完成登录”。')
   }, [])
 
   useImperativeHandle(ref, () => ({
     show() {
+      setSourceUrl(QQ_MUSIC_AUTHORIZE_URL)
+      setPageKey(key => key + 1)
+      setMessage('请在下方 QQ 音乐官方页面手动登录，完成后点“我已完成登录”。')
       modalRef.current?.setVisible(true)
-      void refreshQRCode()
     },
-  }), [refreshQRCode])
-
-  useEffect(() => stopPolling, [stopPolling])
+  }), [])
 
   return (
     <Modal ref={modalRef} statusBarPadding={false} bgHide={false}>
       <View style={[styles.container, { backgroundColor: theme['c-content-background'] }]}>
         <Header onClose={handleClose} />
-        <View style={[styles.content, callbackUrl ? styles.contentWithCallback : null]}>
+        <View style={styles.content}>
           <Text size={14} style={styles.message}>{message}</Text>
-          {callbackUrl ? null : (
-            <View style={[styles.qrBox, { borderColor: theme['c-border-background'] }]}>
-              {session
-                ? <Image source={{ uri: session.imageDataUri }} style={styles.qrImage} />
-                : loading
-                  ? <ActivityIndicator size="large" color={theme['c-primary']} />
-                  : <Text color={theme['c-font-label']}>请刷新二维码</Text>}
-            </View>
-          )}
           <View style={styles.buttons}>
-            {callbackUrl ? null : (
-              <>
-                <Button onPress={saveQRCode} style={styles.button}>
-                  <Text>保存二维码</Text>
-                </Button>
-                <Button onPress={refreshQRCode} style={styles.button}>
-                  <Text>刷新二维码</Text>
-                </Button>
-              </>
-            )}
-            {callbackUrl && callbackIndex < callbackUrls.length - 1 ? (
-              <Button onPress={() => setCallbackIndex(callbackIndex + 1)} style={styles.button}>
-                <Text>换下一个授权页</Text>
-              </Button>
-            ) : null}
-            <Button onPress={() => { void finishCallbackLogin() }} style={styles.button}>
-              <Text>我已确认登录</Text>
+            <Button onPress={() => { void checkAuthAndClose() }} style={styles.button}>
+              <Text>我已完成登录</Text>
+            </Button>
+            <Button onPress={reloadAuthorizePage} style={styles.button}>
+              <Text>刷新网页登录</Text>
+            </Button>
+            <Button onPress={openProfilePage} style={styles.button}>
+              <Text>打开个人页检测</Text>
             </Button>
           </View>
-          {callbackUrl ? (
-            <View style={[styles.callbackWebViewBox, { borderColor: theme['c-border-background'] }]}>
-              <WebView
-                key={callbackUrl}
-                source={{ uri: callbackUrl }}
-                sharedCookiesEnabled
-                thirdPartyCookiesEnabled
-                javaScriptEnabled
-                domStorageEnabled
-                setSupportMultipleWindows={false}
-                userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-                onLoadEnd={() => { void handleCallbackPageLoaded() }}
-                onNavigationStateChange={() => { void handleCallbackPageLoaded() }}
-                onShouldStartLoadWithRequest={({ url }) => /^https?:\/\//i.test(url) || url === 'about:blank'}
-                style={styles.callbackWebView}
-              />
-            </View>
-          ) : null}
+          <View style={[styles.webViewBox, { borderColor: theme['c-border-background'] }]}>
+            <WebView
+              key={`${pageKey}-${sourceUrl}`}
+              source={{ uri: sourceUrl }}
+              sharedCookiesEnabled
+              thirdPartyCookiesEnabled
+              javaScriptEnabled
+              domStorageEnabled
+              setSupportMultipleWindows={false}
+              userAgent={QQ_LOGIN_USER_AGENT}
+              originWhitelist={['*']}
+              nestedScrollEnabled
+              androidLayerType="hardware"
+              onLoadEnd={() => { void checkAuthAndClose(true) }}
+              onNavigationStateChange={() => { void checkAuthAndClose(true) }}
+              onShouldStartLoadWithRequest={({ url }) => /^https?:\/\//i.test(url) || url === 'about:blank'}
+              style={styles.webView}
+            />
+          </View>
           <Text size={12} style={styles.tip}>
-            Cookie 只保存在本机应用沙盒里，不写入日志、设置、备份或同步数据。
+            登录 Cookie 只保存在本机应用沙盒/WebView Cookie 中，不写入日志、设置、备份或同步数据。
           </Text>
         </View>
       </View>
@@ -261,25 +146,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignSelf: 'stretch',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 22,
-    gap: 16,
-  },
-  contentWithCallback: {
     justifyContent: 'flex-start',
+    paddingHorizontal: 16,
     paddingTop: 12,
+    gap: 12,
   },
   message: { textAlign: 'center' },
-  qrBox: {
-    width: 250,
-    height: 250,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    backgroundColor: '#fff',
-  },
-  qrImage: { width: 220, height: 220 },
   buttons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -287,16 +159,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   button: { paddingHorizontal: 10, paddingVertical: 6 },
-  callbackWebViewBox: {
+  webViewBox: {
     alignSelf: 'stretch',
-    minWidth: 280,
     width: '100%',
     flex: 1,
-    minHeight: 360,
+    minHeight: 420,
     borderWidth: 1,
     borderRadius: 8,
     overflow: 'hidden',
   },
-  callbackWebView: { flex: 1, alignSelf: 'stretch' },
-  tip: { textAlign: 'center', lineHeight: 18 },
+  webView: { flex: 1, alignSelf: 'stretch' },
+  tip: { textAlign: 'center', lineHeight: 18, marginBottom: 10 },
 })

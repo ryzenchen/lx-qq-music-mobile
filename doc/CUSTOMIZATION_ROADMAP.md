@@ -100,3 +100,9 @@
 - Aggressive fallback: after QR confirmation, LX-Q now runs the login_jump, QQ Music OAuth authorize URL, and QQ Music profile URL in an in-app WebView, and mirrors returned cookies across QQ Music related domains.
 - Fixed the aggressive OAuth WebView layout so the authorization handoff area renders at full modal width instead of collapsing to a 1px vertical line.
 - Fixed modal touch handling for non-background-close dialogs so the in-app QQ Music authorization WebView can receive taps and gestures.
+
+### 2026-07-15 - QQ manual web login flow
+- Removed the QR-code-first login UI after real-device testing showed the QR confirmation chain was unreliable on a single phone.
+- The QQ Music login modal now opens the official QQ Music OAuth/manual login page directly, so the user can complete login inside the embedded web page.
+- After manual login, LX-Q only checks Android WebView/CookieManager for a local QQ Music login state and refreshes the app status when it is detected.
+- QQ cookies and authorization details remain in the local Android cookie store only; they are not logged, written to settings, backed up, synced, or committed.
