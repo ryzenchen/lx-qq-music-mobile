@@ -42,6 +42,7 @@ export type QQQRLoginPollStatus = 'waiting' | 'scanned' | 'success' | 'expired' 
 export interface QQQRLoginPollResult {
   status: QQQRLoginPollStatus
   message: string
+  redirectUrl?: string
 }
 
 const getAllowedCookies = async (): Promise<Partial<Record<QQAuthCookieName, string>>> => {
@@ -221,14 +222,16 @@ export const pollQQQRLogin = async (qrsig: string): Promise<QQQRLoginPollResult>
   const status = mapQQQRStatus(parsed.code)
   if (status !== 'success') return { status, message: parsed.message }
 
-  let cookies = parseSetCookie(resp.info().headers as Record<string, string>)
-  if (parsed.redirectUrl) cookies = await followQQRedirectCookies(parsed.redirectUrl, cookies)
-  const normalized = normalizeQQMusicCookies(cookies)
-  await setCookieMap(QQ_MUSIC_COOKIE_URL, normalized)
-  await setCookieMap(QQ_GRAPH_COOKIE_URL, normalized)
-  await setCookieMap(QQ_PTLOGIN_COOKIE_URL, { qrsig })
-  await CookieManager.flush()
-  return { status: 'success', message: parsed.message || '登录成功' }
+  try {
+    const cookies = normalizeQQMusicCookies(parseSetCookie(resp.info().headers as Record<string, string>))
+    await setCookieMap(QQ_MUSIC_COOKIE_URL, cookies)
+    await setCookieMap(QQ_GRAPH_COOKIE_URL, cookies)
+    await setCookieMap(QQ_PTLOGIN_COOKIE_URL, { qrsig })
+    await CookieManager.flush()
+  } catch {
+    // The final callback WebView below is the source of truth for cookies.
+  }
+  return { status: 'success', message: parsed.message || '登录成功', redirectUrl: parsed.redirectUrl }
 }
 
 export const getQQAuthStatus = async (): Promise<QQAuthStatus> => {

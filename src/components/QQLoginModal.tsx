@@ -1,6 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { ActivityIndicator, Image, StyleSheet, TouchableOpacity, View } from 'react-native'
 import RNFetchBlob from 'rn-fetch-blob'
+import WebView from 'react-native-webview'
 
 import Modal, { type ModalType } from '@/components/common/Modal'
 import { Icon } from '@/components/common/Icon'
@@ -41,6 +42,7 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
   const sessionRef = useRef<QQQRLoginSession | null>(null)
   const theme = useTheme()
   const [session, setSession] = useState<QQQRLoginSession | null>(null)
+  const [callbackUrl, setCallbackUrl] = useState<string | null>(null)
   const [message, setMessage] = useState('正在生成登录二维码...')
   const [loading, setLoading] = useState(false)
 
@@ -56,13 +58,22 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
   }, [stopPolling])
 
   const checkAuthAndClose = useCallback(async () => {
-    const status = await getQQAuthStatus()
-    if (!status.loggedIn) return false
-    global.app_event.qqAuthUpdated(status)
-    toast('QQ 音乐登录成功')
-    handleClose()
-    return true
+    try {
+      const status = await getQQAuthStatus()
+      if (!status.loggedIn) return false
+      global.app_event.qqAuthUpdated(status)
+      toast('QQ 音乐登录成功')
+      handleClose()
+      return true
+    } catch {
+      return false
+    }
   }, [handleClose])
+
+  const finishCallbackLogin = useCallback(async () => {
+    const loggedIn = await checkAuthAndClose()
+    if (!loggedIn) setMessage('QQ 已确认，正在接收 QQ 音乐登录状态...')
+  }, [checkAuthAndClose])
 
   const poll = useCallback(async () => {
     const currentSession = sessionRef.current
@@ -78,8 +89,12 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
       const result = await pollQQQRLogin(currentSession.qrsig)
       if (result.status === 'success') {
         stopPolling()
-        setMessage('登录成功，正在刷新状态...')
-        await checkAuthAndClose()
+        setMessage('QQ 已确认，正在接收 QQ 音乐登录状态...')
+        if (result.redirectUrl) {
+          setCallbackUrl(result.redirectUrl)
+        } else {
+          void finishCallbackLogin()
+        }
       } else if (result.status === 'scanned') {
         setMessage('已扫码，请在 QQ 中确认登录')
       } else if (result.status === 'expired') {
@@ -95,7 +110,7 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
     } finally {
       pollingRef.current = false
     }
-  }, [checkAuthAndClose, stopPolling])
+  }, [finishCallbackLogin, stopPolling])
 
   const startPolling = useCallback(() => {
     stopPolling()
@@ -107,6 +122,7 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
     setLoading(true)
     setMessage('正在生成登录二维码...')
     stopPolling()
+    setCallbackUrl(null)
     try {
       const nextSession = await createQQQRLogin()
       sessionRef.current = nextSession
@@ -173,10 +189,23 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
             <Button onPress={refreshQRCode} style={styles.button}>
               <Text>刷新二维码</Text>
             </Button>
-            <Button onPress={() => { void checkAuthAndClose() }} style={styles.button}>
+            <Button onPress={() => { void finishCallbackLogin() }} style={styles.button}>
               <Text>我已确认登录</Text>
             </Button>
           </View>
+          {callbackUrl ? (
+            <WebView
+              source={{ uri: callbackUrl }}
+              sharedCookiesEnabled
+              thirdPartyCookiesEnabled
+              javaScriptEnabled
+              domStorageEnabled
+              setSupportMultipleWindows={false}
+              onLoadEnd={() => { void finishCallbackLogin() }}
+              onNavigationStateChange={() => { void finishCallbackLogin() }}
+              style={styles.callbackWebView}
+            />
+          ) : null}
           <Text size={12} style={styles.tip}>
             Cookie 只保存在本机应用沙盒里，不写入日志、设置、备份或同步数据。
           </Text>
@@ -222,5 +251,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   button: { paddingHorizontal: 10, paddingVertical: 6 },
+  callbackWebView: { width: 1, height: 1, opacity: 0 },
   tip: { textAlign: 'center', lineHeight: 18 },
 })

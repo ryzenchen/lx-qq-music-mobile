@@ -91,3 +91,8 @@
 - The panel generates a QQ Music QR code, saves it to the phone picture folder for single-phone scanning, and polls the official QQ login result in the background.
 - After confirmation in QQ, the app writes only the returned QQ Music session cookies to Android CookieManager, then refreshes the visible login status.
 - Sensitive qrsig/cookie values remain in memory or the system cookie store only; they are not logged, added to app settings, backed up, synced, or committed.
+
+### 2026-07-15 - QQ QR callback handoff fix
+- After QQ reports QR login success, LX-Q now opens the official callback URL in a hidden in-app WebView so Android WebView/CookieManager can receive the final QQ Music cookies.
+- Kept the QR token and callback details out of logs, app settings, backups, sync data, and commits.
+- The manual confirmation button now rechecks local login state without surfacing misleading network errors while callback cookies are still being received.
