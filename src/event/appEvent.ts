@@ -23,6 +23,14 @@ import { isOneDriveMusicInfo } from '@/core/oneDrive/utils'
 // }
 
 export class AppEvent extends Event {
+  showQQLogin() {
+    this.emit('showQQLogin')
+  }
+
+  qqAuthUpdated(status: { loggedIn: boolean; accountHint: string | null; loginType: 'qq' | 'wechat' | null }) {
+    this.emit('qqAuthUpdated', status)
+  }
+
   // configUpdate() {
   //   this.emit('configUpdate')
   // }

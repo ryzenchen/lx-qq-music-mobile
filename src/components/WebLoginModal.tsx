@@ -56,26 +56,22 @@ export default forwardRef<WebLoginModalType, {}>((props, ref) => {
   };
 
   const handleNavigationStateChange = async (navState: WebViewNavigation) => {
-    console.log('Web登录: 页面导航状态变化:', navState.url);
     const url = navState.url;
     const isLoggedIn = url.includes(SUCCESS_URL_FLAG) && !url.includes('/login') && !url.includes('/m/login');
     if (isLoggedIn) {
-      console.log('Web登录: extracting cookies via CookieManager');
       try {
         const cookies = await CookieManager.get(navState.url, true);
         const cookieString = Object.values(cookies)
           .map(c => `${c.name}=${c.value}`)
           .join('; ');
-        console.log('Web登录: CookieManager captured cookies');
         handleMessage({ nativeEvent: { data: cookieString } });
       } catch (err) {
-        console.error('Web登录: CookieManager extraction failed, falling back to document.cookie', err);
+        console.error('Web登录: Cookie 获取失败，使用页面回退方式');
         webViewRef.current?.injectJavaScript('window.ReactNativeWebView.postMessage(document.cookie);');
       }
     }
   };
   const handleMessage = async (event: any) => {
-    console.log('Web登录: 收到消息:', event.nativeEvent.data);
     if (loggedInRef.current || isCheckingRef.current) return;
 
     const cookie = event.nativeEvent.data;
