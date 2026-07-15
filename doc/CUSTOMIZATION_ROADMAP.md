@@ -86,3 +86,8 @@
 - 保留酷我、酷狗、网易云、咪咕等来源作为备用源。
 - 生成可独立运行的 Release 测试 APK。
 - 为 Android 构建增加国内依赖镜像，提高构建成功率。
+### 2026-07-15 - QQ QR login native flow
+- Replaced the ineffective in-app WebView login page with a native QQ QR login panel.
+- The panel generates a QQ Music QR code, saves it to the phone picture folder for single-phone scanning, and polls the official QQ login result in the background.
+- After confirmation in QQ, the app writes only the returned QQ Music session cookies to Android CookieManager, then refreshes the visible login status.
+- Sensitive qrsig/cookie values remain in memory or the system cookie store only; they are not logged, added to app settings, backed up, synced, or committed.
