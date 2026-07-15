@@ -209,20 +209,22 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
             </Button>
           </View>
           {callbackUrl ? (
-            <WebView
-              key={callbackUrl}
-              source={{ uri: callbackUrl }}
-              sharedCookiesEnabled
-              thirdPartyCookiesEnabled
-              javaScriptEnabled
-              domStorageEnabled
-              setSupportMultipleWindows={false}
-              userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-              onLoadEnd={() => { void handleCallbackPageLoaded() }}
-              onNavigationStateChange={() => { void handleCallbackPageLoaded() }}
-              onShouldStartLoadWithRequest={({ url }) => /^https?:\/\//i.test(url) || url === 'about:blank'}
-              style={[styles.callbackWebView, { borderColor: theme['c-border-background'] }]}
-            />
+            <View style={[styles.callbackWebViewBox, { borderColor: theme['c-border-background'] }]}>
+              <WebView
+                key={callbackUrl}
+                source={{ uri: callbackUrl }}
+                sharedCookiesEnabled
+                thirdPartyCookiesEnabled
+                javaScriptEnabled
+                domStorageEnabled
+                setSupportMultipleWindows={false}
+                userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                onLoadEnd={() => { void handleCallbackPageLoaded() }}
+                onNavigationStateChange={() => { void handleCallbackPageLoaded() }}
+                onShouldStartLoadWithRequest={({ url }) => /^https?:\/\//i.test(url) || url === 'about:blank'}
+                style={styles.callbackWebView}
+              />
+            </View>
           ) : null}
           <Text size={12} style={styles.tip}>
             Cookie 只保存在本机应用沙盒里，不写入日志、设置、备份或同步数据。
@@ -246,6 +248,7 @@ const styles = StyleSheet.create({
   headerButton: { padding: 5, width: 40 },
   content: {
     flex: 1,
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 22,
@@ -269,12 +272,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   button: { paddingHorizontal: 10, paddingVertical: 6 },
-  callbackWebView: {
+  callbackWebViewBox: {
+    alignSelf: 'stretch',
+    minWidth: 280,
     width: '100%',
     height: 260,
     borderWidth: 1,
     borderRadius: 8,
     overflow: 'hidden',
   },
+  callbackWebView: { flex: 1, alignSelf: 'stretch' },
   tip: { textAlign: 'center', lineHeight: 18 },
 })
