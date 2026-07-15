@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react'
-import { StyleSheet, TouchableOpacity, View } from 'react-native'
-import WebView from 'react-native-webview'
+import { Linking, StyleSheet, TouchableOpacity, View } from 'react-native'
+import WebView, { type WebViewNavigation } from 'react-native-webview'
 
 import Modal, { type ModalType } from '@/components/common/Modal'
 import { Icon } from '@/components/common/Icon'
@@ -10,46 +10,10 @@ import { useTheme } from '@/store/theme/hook'
 import { getQQAuthStatus } from '@/core/qqAuth'
 import { toast } from '@/utils/tools'
 
-const LOGIN_URL = 'https://y.qq.com/n/ryqq/profile'
-const DESKTOP_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-
-// QQ 音乐移动首页不提供稳定登录入口，使用桌面个人中心并触发其官方登录按钮。
-// 脚本不读取页面 Cookie、账号或表单内容。
-const OPEN_LOGIN_SCRIPT = `
-  (function openQQMusicLogin() {
-    if (window.__lxqLoginOpened) return true;
-    var findLoginButton = function() {
-      var selectors = [
-        '.top_login__link',
-        '.js_login',
-        '[data-stat="y_new.top.login"]',
-        'a[href*="login"]'
-      ];
-      for (var i = 0; i < selectors.length; i++) {
-        var button = document.querySelector(selectors[i]);
-        if (button) return button;
-      }
-      var candidates = document.querySelectorAll('a, button, span');
-      for (var j = 0; j < candidates.length; j++) {
-        if ((candidates[j].textContent || '').trim() === '登录') return candidates[j];
-      }
-      return null;
-    };
-    var attempts = 0;
-    var timer = setInterval(function() {
-      attempts += 1;
-      var button = findLoginButton();
-      if (button) {
-        window.__lxqLoginOpened = true;
-        clearInterval(timer);
-        button.click();
-      } else if (attempts >= 20) {
-        clearInterval(timer);
-      }
-    }, 500);
-    return true;
-  })();
-`
+// QQ 音乐网页使用的腾讯官方 OAuth 应用。移动展示模式可唤起本机 QQ，
+// 同时保留腾讯页面提供的账号登录方式，不需要另一台手机扫码。
+const LOGIN_URL = 'https://graph.qq.com/oauth2.0/authorize?response_type=code&client_id=100497308&redirect_uri=https%3A%2F%2Fy.qq.com%2Fportal%2Fwx_redirect.html%3Flogin_type%3D1%26surl%3Dhttps%253A%252F%252Fy.qq.com%252Fn%252Fryqq_v2%252Fprofile&state=state&display=mobile&scope=get_user_info%2Cget_app_friends'
+const MOBILE_USER_AGENT = 'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36'
 
 export interface QQLoginModalType {
   show: () => void
@@ -101,11 +65,23 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
       toast('QQ 音乐登录成功')
       handleClose()
     } catch {
-      // 登录页面加载过程中检查失败是正常状态，不记录 Cookie 或请求细节。
+      // 页面跳转期间检查失败属于正常状态，不记录 Cookie 或请求细节。
     } finally {
       checkingRef.current = false
     }
   }, [handleClose])
+
+  const handleNavigation = useCallback((request: WebViewNavigation) => {
+    const url = request.url
+    if (/^https?:\/\//i.test(url) || url === 'about:blank') return true
+
+    // 腾讯登录页的一键登录会使用 QQ 的应用协议。只交给 Android 系统处理，
+    // 不读取、转发或记录协议中的任何登录参数。
+    if (/^(mqqapi|mqqopensdkapi|wtloginmqq):\/\//i.test(url)) {
+      void Linking.openURL(url).catch(() => toast('未能打开 QQ，请确认已安装最新版 QQ'))
+    }
+    return false
+  }, [])
 
   return (
     <Modal ref={modalRef} statusBarPadding={false} bgHide={false}>
@@ -117,11 +93,13 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
           thirdPartyCookiesEnabled
           javaScriptEnabled
           domStorageEnabled
+          nestedScrollEnabled
+          androidLayerType="hardware"
           setSupportMultipleWindows={false}
-          injectedJavaScript={OPEN_LOGIN_SCRIPT}
+          onShouldStartLoadWithRequest={handleNavigation}
           onLoadEnd={() => { void checkLoginStatus() }}
           onNavigationStateChange={() => { void checkLoginStatus() }}
-          userAgent={DESKTOP_USER_AGENT}
+          userAgent={MOBILE_USER_AGENT}
         />
       </View>
     </Modal>
