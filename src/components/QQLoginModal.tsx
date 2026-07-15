@@ -10,7 +10,46 @@ import { useTheme } from '@/store/theme/hook'
 import { getQQAuthStatus } from '@/core/qqAuth'
 import { toast } from '@/utils/tools'
 
-const LOGIN_URL = 'https://y.qq.com/'
+const LOGIN_URL = 'https://y.qq.com/n/ryqq/profile'
+const DESKTOP_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+
+// QQ 音乐移动首页不提供稳定登录入口，使用桌面个人中心并触发其官方登录按钮。
+// 脚本不读取页面 Cookie、账号或表单内容。
+const OPEN_LOGIN_SCRIPT = `
+  (function openQQMusicLogin() {
+    if (window.__lxqLoginOpened) return true;
+    var findLoginButton = function() {
+      var selectors = [
+        '.top_login__link',
+        '.js_login',
+        '[data-stat="y_new.top.login"]',
+        'a[href*="login"]'
+      ];
+      for (var i = 0; i < selectors.length; i++) {
+        var button = document.querySelector(selectors[i]);
+        if (button) return button;
+      }
+      var candidates = document.querySelectorAll('a, button, span');
+      for (var j = 0; j < candidates.length; j++) {
+        if ((candidates[j].textContent || '').trim() === '登录') return candidates[j];
+      }
+      return null;
+    };
+    var attempts = 0;
+    var timer = setInterval(function() {
+      attempts += 1;
+      var button = findLoginButton();
+      if (button) {
+        window.__lxqLoginOpened = true;
+        clearInterval(timer);
+        button.click();
+      } else if (attempts >= 20) {
+        clearInterval(timer);
+      }
+    }, 500);
+    return true;
+  })();
+`
 
 export interface QQLoginModalType {
   show: () => void
@@ -76,9 +115,13 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
           source={{ uri: LOGIN_URL }}
           sharedCookiesEnabled
           thirdPartyCookiesEnabled
+          javaScriptEnabled
+          domStorageEnabled
+          setSupportMultipleWindows={false}
+          injectedJavaScript={OPEN_LOGIN_SCRIPT}
           onLoadEnd={() => { void checkLoginStatus() }}
           onNavigationStateChange={() => { void checkLoginStatus() }}
-          userAgent="Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+          userAgent={DESKTOP_USER_AGENT}
         />
       </View>
     </Modal>
