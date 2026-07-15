@@ -167,9 +167,15 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
                 : <Text color={theme['c-font-label']}>请刷新二维码</Text>}
           </View>
           <View style={styles.buttons}>
-            <Button onPress={saveQRCode}>保存二维码</Button>
-            <Button onPress={refreshQRCode}>刷新二维码</Button>
-            <Button onPress={() => { void checkAuthAndClose() }}>我已确认登录</Button>
+            <Button onPress={saveQRCode} style={styles.button}>
+              <Text>保存二维码</Text>
+            </Button>
+            <Button onPress={refreshQRCode} style={styles.button}>
+              <Text>刷新二维码</Text>
+            </Button>
+            <Button onPress={() => { void checkAuthAndClose() }} style={styles.button}>
+              <Text>我已确认登录</Text>
+            </Button>
           </View>
           <Text size={12} style={styles.tip}>
             Cookie 只保存在本机应用沙盒里，不写入日志、设置、备份或同步数据。
@@ -215,5 +221,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
   },
+  button: { paddingHorizontal: 10, paddingVertical: 6 },
   tip: { textAlign: 'center', lineHeight: 18 },
 })
