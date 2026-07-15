@@ -159,6 +159,9 @@ android {
             applicationIdSuffix ".dev"
         }
         release {
+            if (project.hasProperty('LXQ_TEST_BUILD')) {
+                applicationIdSuffix ".lxqtest"
+            }
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
