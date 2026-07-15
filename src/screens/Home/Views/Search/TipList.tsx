@@ -14,10 +14,20 @@ import { debounce } from '@/utils'
 
 export const ITEM_HEIGHT = scaleSizeH(36)
 
+interface TipSearchModule {
+  tipSearch?: {
+    search?: (keyword: string) => Promise<string[]>
+  }
+}
+
 export const debounceTipSearch = debounce(
   (keyword: string, source: SearchState['temp_source'], callback: (list: string[]) => void) => {
-    // console.log(reslutList)
-    void musicSdk[source].tipSearch.search(keyword).then(callback)
+    const tipSearch = (musicSdk[source] as TipSearchModule | undefined)?.tipSearch
+    if (!tipSearch?.search) {
+      callback([])
+      return
+    }
+    void tipSearch.search(keyword).then(callback).catch(() => callback([]))
   },
   200
 )
