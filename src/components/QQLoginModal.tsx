@@ -42,9 +42,11 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
   const sessionRef = useRef<QQQRLoginSession | null>(null)
   const theme = useTheme()
   const [session, setSession] = useState<QQQRLoginSession | null>(null)
-  const [callbackUrl, setCallbackUrl] = useState<string | null>(null)
+  const [callbackUrls, setCallbackUrls] = useState<string[]>([])
+  const [callbackIndex, setCallbackIndex] = useState(0)
   const [message, setMessage] = useState('正在生成登录二维码...')
   const [loading, setLoading] = useState(false)
+  const callbackUrl = callbackUrls[callbackIndex] ?? null
 
   const stopPolling = useCallback(() => {
     if (pollTimerRef.current) clearInterval(pollTimerRef.current)
@@ -75,6 +77,16 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
     if (!loggedIn) setMessage('QQ 已确认，正在接收 QQ 音乐登录状态...')
   }, [checkAuthAndClose])
 
+  const handleCallbackPageLoaded = useCallback(async () => {
+    const loggedIn = await checkAuthAndClose()
+    if (loggedIn) return
+    if (callbackIndex < callbackUrls.length - 1) {
+      setCallbackIndex(callbackIndex + 1)
+      return
+    }
+    setMessage('QQ 已确认，请在下方授权页等待跳转完成；如果出现登录/授权按钮，请直接点一下')
+  }, [callbackIndex, callbackUrls.length, checkAuthAndClose])
+
   const poll = useCallback(async () => {
     const currentSession = sessionRef.current
     if (!currentSession || pollingRef.current) return
@@ -90,8 +102,10 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
       if (result.status === 'success') {
         stopPolling()
         setMessage('QQ 已确认，正在接收 QQ 音乐登录状态...')
-        if (result.redirectUrl) {
-          setCallbackUrl(result.redirectUrl)
+        const urls = result.callbackUrls ?? (result.redirectUrl ? [result.redirectUrl] : [])
+        if (urls.length) {
+          setCallbackUrls(urls)
+          setCallbackIndex(0)
         } else {
           void finishCallbackLogin()
         }
@@ -122,7 +136,8 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
     setLoading(true)
     setMessage('正在生成登录二维码...')
     stopPolling()
-    setCallbackUrl(null)
+    setCallbackUrls([])
+    setCallbackIndex(0)
     try {
       const nextSession = await createQQQRLogin()
       sessionRef.current = nextSession
@@ -195,15 +210,18 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
           </View>
           {callbackUrl ? (
             <WebView
+              key={callbackUrl}
               source={{ uri: callbackUrl }}
               sharedCookiesEnabled
               thirdPartyCookiesEnabled
               javaScriptEnabled
               domStorageEnabled
               setSupportMultipleWindows={false}
-              onLoadEnd={() => { void finishCallbackLogin() }}
-              onNavigationStateChange={() => { void finishCallbackLogin() }}
-              style={styles.callbackWebView}
+              userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+              onLoadEnd={() => { void handleCallbackPageLoaded() }}
+              onNavigationStateChange={() => { void handleCallbackPageLoaded() }}
+              onShouldStartLoadWithRequest={({ url }) => /^https?:\/\//i.test(url) || url === 'about:blank'}
+              style={[styles.callbackWebView, { borderColor: theme['c-border-background'] }]}
             />
           ) : null}
           <Text size={12} style={styles.tip}>
@@ -251,6 +269,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   button: { paddingHorizontal: 10, paddingVertical: 6 },
-  callbackWebView: { width: 1, height: 1, opacity: 0 },
+  callbackWebView: {
+    width: '100%',
+    height: 260,
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
   tip: { textAlign: 'center', lineHeight: 18 },
 })

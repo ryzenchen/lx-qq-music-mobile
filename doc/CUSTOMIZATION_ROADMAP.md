@@ -97,3 +97,4 @@
 - Kept the QR token and callback details out of logs, app settings, backups, sync data, and commits.
 - The manual confirmation button now rechecks local login state without surfacing misleading network errors while callback cookies are still being received.
 - Expanded the local login-state detector to accept QQ Music's alternate cookie names such as qqmusic_key, musickey, p_skey, musicid, and ptui_loginuin.
+- Aggressive fallback: after QR confirmation, LX-Q now runs the login_jump, QQ Music OAuth authorize URL, and QQ Music profile URL in an in-app WebView, and mirrors returned cookies across QQ Music related domains.
