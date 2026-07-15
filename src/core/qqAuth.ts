@@ -13,6 +13,12 @@ const QQ_LOGIN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.3
 const QQ_AUTH_COOKIE_NAMES = [
   'uin',
   'qqmusic_uin',
+  'musicid',
+  'userid',
+  'ptui_loginuin',
+  'luin',
+  'pt2gguin',
+  'p_uin',
   'qm_keyst',
   'qqmusic_key',
   'p_skey',
@@ -53,6 +59,13 @@ const getAllowedCookies = async (): Promise<Partial<Record<QQAuthCookieName, str
     if (value) allowed[name] = value
   }
   return allowed
+}
+
+const firstNonEmpty = (...values: Array<string | undefined>) => {
+  for (const value of values) {
+    if (value?.trim()) return value.trim()
+  }
+  return ''
 }
 
 const normalizeUin = (value?: string) => value?.replace(/^o0*/, '') ?? ''
@@ -236,8 +249,24 @@ export const pollQQQRLogin = async (qrsig: string): Promise<QQQRLoginPollResult>
 
 export const getQQAuthStatus = async (): Promise<QQAuthStatus> => {
   const cookies = await getAllowedCookies()
-  const qqUin = normalizeUin(cookies.uin || cookies.qqmusic_uin)
-  const isQQLogin = Boolean(cookies.qm_keyst && qqUin && qqUin !== '0')
+  const qqUin = normalizeUin(firstNonEmpty(
+    cookies.uin,
+    cookies.qqmusic_uin,
+    cookies.musicid,
+    cookies.userid,
+    cookies.ptui_loginuin,
+    cookies.luin,
+    cookies.pt2gguin,
+    cookies.p_uin,
+  ))
+  const musicKey = firstNonEmpty(
+    cookies.qm_keyst,
+    cookies.qqmusic_key,
+    cookies.musickey,
+    cookies.p_skey,
+    cookies.skey,
+  )
+  const isQQLogin = Boolean(musicKey && qqUin && qqUin !== '0')
   const isWechatLogin = Boolean(cookies.wxunionid && cookies.wxrefresh_token)
 
   return {

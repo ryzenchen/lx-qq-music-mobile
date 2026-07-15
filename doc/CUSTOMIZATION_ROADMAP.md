@@ -96,3 +96,4 @@
 - After QQ reports QR login success, LX-Q now opens the official callback URL in a hidden in-app WebView so Android WebView/CookieManager can receive the final QQ Music cookies.
 - Kept the QR token and callback details out of logs, app settings, backups, sync data, and commits.
 - The manual confirmation button now rechecks local login state without surfacing misleading network errors while callback cookies are still being received.
+- Expanded the local login-state detector to accept QQ Music's alternate cookie names such as qqmusic_key, musickey, p_skey, musicid, and ptui_loginuin.
