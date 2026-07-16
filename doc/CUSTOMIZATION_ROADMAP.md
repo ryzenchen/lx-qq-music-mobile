@@ -106,3 +106,10 @@
 - The QQ Music login modal now opens the official QQ Music OAuth/manual login page directly, so the user can complete login inside the embedded web page.
 - After manual login, LX-Q only checks Android WebView/CookieManager for a local QQ Music login state and refreshes the app status when it is detected.
 - QQ cookies and authorization details remain in the local Android cookie store only; they are not logged, written to settings, backed up, synced, or committed.
+
+### 2026-07-16 - QQ account playlists and recommendations phase 2/3
+- Added a QQ Music account API layer for logged-in user playlists, collected playlists, daily/private recommendation candidates, and recommended playlists.
+- Switched the My Playlist page from the previous NetEase-only data source to QQ Music account playlists, with a login prompt when QQ auth is missing.
+- Switched the Daily Recommendation songs tab to QQ Music recommendation songs; when the private daily playlist cannot be detected, it falls back to songs from a QQ recommended playlist so playback can still be tested.
+- Switched the Daily Recommendation playlists tab to QQ Music recommended playlists and kept playlist details on the existing QQ Music detail/playback path.
+- Removed the old global request URL/body debug printing so account playlist responses, cookies, and recommendation payloads are not written to logs.

@@ -14,8 +14,7 @@ import {clearPlayedList} from "@/core/player/playedList.ts";
 import settingState from '@/store/setting/state';
 import {toast} from "@/utils/tools.ts";
 
-export const handlePlay = async (list: LX.Music.MusicInfoOnline[], index = 0) => {
-  const listId = 'dailyrec_wy'
+export const handlePlay = async (list: LX.Music.MusicInfoOnline[], index = 0, listId = 'dailyrec_wy') => {
   await setTempList(listId, [...list])
   clearPlayedList()
   setActiveList(LIST_IDS.TEMP)

@@ -18,7 +18,7 @@ export default memo(({ item, onPress, onHeartbeatPress }: { item: any, onPress: 
       img: item.coverImgUrl,
       play_count: item.playCount,
       desc: item.description,
-      source: 'wy',
+      source: item.source ?? 'wy',
       userId: item.userId,
       total: item.trackCount,
     }
@@ -33,7 +33,7 @@ export default memo(({ item, onPress, onHeartbeatPress }: { item: any, onPress: 
       img: item.coverImgUrl,
       play_count: item.playCount,
       desc: item.description,
-      source: 'wy',
+      source: item.source ?? 'wy',
       userId: item.userId,
       total: item.trackCount,
     }
