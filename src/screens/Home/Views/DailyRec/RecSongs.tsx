@@ -19,6 +19,9 @@ interface RecSongsProps {
   stylizedSelection?: StylizedSelection | null
 }
 
+const isValidOnlineMusicList = (list: LX.Music.MusicInfoOnline[] | null) =>
+  !!list?.length && list.every(item => item?.meta?.songId && item.meta._qualitys && item.meta.qualitys)
+
 export default memo(({ isStylized }: RecSongsProps) => {
   const listRef = useRef<OnlineListType>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -51,12 +54,16 @@ export default memo(({ isStylized }: RecSongsProps) => {
     }
     const cachedSongs = useCache ? getDailyRecSongsCache() : null
     if (cachedSongs) {
-      setTimeout(() => {
-        listRef.current?.setList(cachedSongs, false)
-        listRef.current?.setStatus('idle')
-        setIsLoading(false)
-      }, 0)
-      return
+      if (!isValidOnlineMusicList(cachedSongs)) {
+        clearDailyRecSongsCache()
+      } else {
+        setTimeout(() => {
+          listRef.current?.setList(cachedSongs, false)
+          listRef.current?.setStatus('idle')
+          setIsLoading(false)
+        }, 0)
+        return
+      }
     }
 
     setIsLoading(true)

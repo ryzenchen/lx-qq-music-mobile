@@ -1,5 +1,5 @@
 import { getQQAuthCookieHeader, getQQAuthStatus } from '@/core/qqAuth'
-import { decodeName, formatPlayCount } from '../../index'
+import { decodeName, formatPlayCount, toNewMusicInfo } from '../../index'
 import songListApi from './songList'
 
 const QQ_MUSIC_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -248,7 +248,8 @@ const getPlaylistDetailWithCookie = async(id: string, cookie: string) => {
   const cdlist = result.cdlist?.[0]
   if (!cdlist?.songlist) throw new Error('QQ 音乐歌单没有歌曲')
   return {
-    list: await songListApi.filterListDetail(cdlist.songlist),
+    list: (await songListApi.filterListDetail(cdlist.songlist))
+      .map((item: any) => toNewMusicInfo(item) as LX.Music.MusicInfoOnline),
     info: cdlist,
   }
 }
@@ -272,7 +273,9 @@ const getFallbackRecommendSongs = async() => {
   const first = result.recomPlaylist?.data?.v_hot?.[0]
   if (!first?.content_id) throw new Error('QQ 音乐暂时没有返回推荐歌曲')
   const detail = await songListApi.getListDetail(String(first.content_id))
-  return detail.list.slice(0, 30)
+  return detail.list
+    .slice(0, 30)
+    .map((item: any) => toNewMusicInfo(item) as LX.Music.MusicInfoOnline)
 }
 
 export default {

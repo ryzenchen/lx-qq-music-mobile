@@ -8,7 +8,7 @@ import Text from '@/components/common/Text'
 import Button from '@/components/common/Button'
 import { useStatusbarHeight } from '@/store/common/hook'
 import { useTheme } from '@/store/theme/hook'
-import { getQQAuthStatus, QQ_MUSIC_AUTHORIZE_URL } from '@/core/qqAuth'
+import { flushQQAuthCookies, getQQAuthStatus, QQ_MUSIC_AUTHORIZE_URL } from '@/core/qqAuth'
 import { toast } from '@/utils/tools'
 
 export interface QQLoginModalType {
@@ -55,6 +55,7 @@ export default forwardRef<QQLoginModalType, {}>((props, ref) => {
         if (!silent) setMessage('还没有检测到 QQ 音乐登录状态，请先在网页内完成登录/授权，再点“我已完成登录”。')
         return false
       }
+      await flushQQAuthCookies()
       global.app_event.qqAuthUpdated(status)
       toast('QQ 音乐登录成功')
       handleClose()

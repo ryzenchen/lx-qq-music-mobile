@@ -21,6 +21,9 @@ export const handlePlay = async (list: LX.Music.MusicInfoOnline[], index = 0, li
   void playList(LIST_IDS.TEMP, index)
 }
 
+const isValidOnlineMusicList = (list: LX.Music.MusicInfoOnline[]) =>
+  !!list.length && list.every(item => item?.meta?.songId && item.meta._qualitys && item.meta.qualitys)
+
 /**
  * 获取基于早上7点为分界的逻辑日期
  * @returns {Date} 计算后的日期对象
@@ -51,7 +54,7 @@ export const autoSaveDailyPlaylist = async(songList: LX.Music.MusicInfoOnline[])
 
   if (existingPlaylist) {
     const existingSongs = await getListMusics(existingPlaylist.id);
-    if (existingSongs.length && existingSongs[0].id === songList[0].id) {
+    if (isValidOnlineMusicList(existingSongs as LX.Music.MusicInfoOnline[]) && existingSongs[0].id === songList[0].id) {
       console.log(`歌单 ${playlistName} 无需更新，跳过保存。`);
       return;
     }

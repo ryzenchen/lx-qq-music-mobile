@@ -113,3 +113,9 @@
 - Switched the Daily Recommendation songs tab to QQ Music recommendation songs; when the private daily playlist cannot be detected, it falls back to songs from a QQ recommended playlist so playback can still be tested.
 - Switched the Daily Recommendation playlists tab to QQ Music recommended playlists and kept playlist details on the existing QQ Music detail/playback path.
 - Removed the old global request URL/body debug printing so account playlist responses, cookies, and recommendation payloads are not written to logs.
+
+### 2026-07-17 - QQ daily recommendation playback fix
+- Fixed QQ daily recommendation songs by converting QQ playlist-detail song objects into LX's current online music shape before showing, playing, caching, or auto-saving them.
+- Added cache validation so stale daily recommendation songs from the previous build are discarded and reloaded instead of crashing on missing `meta.songId` or `meta._qualitys`.
+- Updated daily recommendation auto-save so an existing local `MM_DD_daily` list with invalid old-format songs is overwritten with the corrected song shape.
+- Flush Android WebView/CookieManager cookies immediately after QQ login succeeds, improving local login persistence without writing raw QQ cookies into settings, logs, backups, sync data, or Git.

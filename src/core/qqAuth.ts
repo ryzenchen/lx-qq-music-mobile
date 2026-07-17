@@ -300,6 +300,10 @@ export const getQQAuthCookieHeader = async (): Promise<string> => {
     .join('; ')
 }
 
+export const flushQQAuthCookies = async () => {
+  await CookieManager.flush()
+}
+
 export const clearQQAuth = async () => {
   await Promise.all(
     QQ_AUTH_COOKIE_NAMES.map(async name => {
